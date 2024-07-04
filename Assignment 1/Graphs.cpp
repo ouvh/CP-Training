@@ -5,6 +5,7 @@
 #include <functional>
 #include <map>
 #include <cmath>
+#include <queue>
 
 
 using namespace std;
@@ -23,22 +24,28 @@ class Graph{
         
         static vector<pair<float,float>> coordinates_map;
 
-
-    
         struct PairComparator {
-                    bool operator()(const std::pair<unsigned int, unsigned int>& a, const std::pair<unsigned int, unsigned int>& b) const {
-                        
-                            return distance(Graph::coordinates_map[a.first],Graph::coordinates_map[a.second]) < distance(Graph::coordinates_map[b.first],Graph::coordinates_map[b.second]);
-                        
-                    }
+            bool operator()(const std::pair<unsigned int, unsigned int>& a, const std::pair<unsigned int, unsigned int>& b) const {
+                
+                    return distance(Graph::coordinates_map[a.first],Graph::coordinates_map[a.second]) < distance(Graph::coordinates_map[b.first],Graph::coordinates_map[b.second]);
+                
+            }
         };
 
-
-   
         vector<map<pair<unsigned int,unsigned int>,double,PairComparator>> Adjlist;
 
-    public:
+        void DFS_helper(unsigned int id,vector<bool> &visited){
+            visited[id] = true;
+            cout << id << " ";
 
+            for ( auto& pair : Adjlist[id]) {
+                if(visited[pair.first.second])continue;
+                DFS_helper(pair.first.second,visited);
+            }
+
+        }
+
+    public:
 
         float Connectivity_Range;
 
@@ -102,6 +109,82 @@ class Graph{
                 }
             }
         }
+        
+        void diplay_Adj_vehicules(unsigned int id){
+            size_t capacity = coordinates_map.size();
+            if (id >= capacity)return;
+
+
+            for ( auto& pair : Adjlist[id]) {
+                printf("\n(%d, %.3g)\n",pair.first.second,pair.second);
+            }
+            
+        }
+
+        void move_vehicule(unsigned int id, float x, float y){
+
+            size_t capacity = coordinates_map.size();
+            if(id>= capacity)return;
+
+
+            coordinates_map[id] = pair<float,float>(x,y);
+
+            for ( auto& pair : Adjlist[id]) {
+                Adjlist[pair.first.second].erase({pair.first.second,pair.first.first});
+            }
+            
+            Adjlist[id].clear();
+
+            for(int id2=0;id2<capacity;id2++){
+                    if(id == id2)continue;
+                    if(check_connectivity(id,id2))addedge(id,id2);
+
+            }
+
+
+
+        }
+
+        void DFS(unsigned int id){
+
+            size_t capacity = coordinates_map.size();
+            if(id >=capacity)return;
+
+            vector<bool> visited(capacity,false);
+
+            DFS_helper(id,visited);
+            cout << "\n";
+
+        }
+
+        void BFS(unsigned int id){
+            size_t capacity = coordinates_map.size();
+            if(id >=capacity)return;
+
+            vector<bool> visited(capacity,false);
+            queue<unsigned int> Queue;
+
+            Queue.push(id);
+            visited[id] = true;
+
+            while(!Queue.empty()){
+                unsigned int front = Queue.front();
+                Queue.pop();
+
+                cout << front << " ";
+
+                for ( auto& pair : Adjlist[front]) {
+                    if(visited[pair.first.second]) continue;
+                    visited[pair.first.second] = true;
+                    Queue.push(pair.first.second);
+                }
+
+
+            }
+
+            cout << "\n";
+
+        }
 };
 
 vector<pair<float,float>> Graph::coordinates_map;
@@ -109,14 +192,15 @@ vector<pair<float,float>> Graph::coordinates_map;
 
 int main(){
 
+
+
     Graph graph;
     graph.parseinput();
     graph.build_Graph_based_on_Connectivity();
-    graph.diplay_edges();
     
-
-
-
+    graph.DFS(0);
+    cout << "Hello\n";
+    graph.BFS(0);
 
 
 
