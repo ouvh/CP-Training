@@ -11,6 +11,14 @@
 using namespace std;
 
 
+struct TreeNode {
+    unsigned int val;
+    vector<TreeNode> children;
+
+    // Constructor
+    TreeNode(int x) : val(x) {}
+};
+
 
 
 double distance(pair<float,float> &a,pair<float,float> &b){
@@ -21,6 +29,12 @@ double distance(pair<float,float> &a,pair<float,float> &b){
 class Graph{
    
     private:
+
+        struct CompareEdge {
+            bool operator()(pair<unsigned int,double> const& e1, pair<unsigned int,double> const& e2) {
+                return e1.second > e2.second; 
+            }
+        };
         
         static vector<pair<float,float>> coordinates_map;
 
@@ -185,6 +199,48 @@ class Graph{
             cout << "\n";
 
         }
+
+        void prim_MST() {
+
+            size_t capacity = coordinates_map.size();
+            if(capacity == 0)return;
+
+
+            priority_queue<pair<unsigned int,double>, vector<pair<unsigned int,double>>, CompareEdge> pq;
+
+            vector<int> min_to_vertex(capacity, INT_MAX);
+
+            vector<int> parent(capacity, -1);
+
+            vector<bool> inserted(capacity, false);
+
+            unsigned int root = 0; // i choosed 0 as the root of the MST
+            min_to_vertex[root] = 0;
+            pq.push({root, 0});
+
+            while (!pq.empty()) {
+
+                int front = pq.top().first;
+                pq.pop();
+
+                inserted[front] = true;
+
+                for (auto& pair : Adjlist[front]) {
+
+                    unsigned int v = pair.first.second;
+                    int weight = pair.second;
+
+                    if (!inserted[v] && weight < min_to_vertex[v]) {
+
+                        min_to_vertex[v] = weight;
+                        parent[v] = front;
+                        pq.push({v, min_to_vertex[v]});
+                    }
+                }
+            }
+        
+        }
+
 };
 
 vector<pair<float,float>> Graph::coordinates_map;
@@ -193,7 +249,7 @@ vector<pair<float,float>> Graph::coordinates_map;
 int main(){
 
 
-
+    TreeNode d(5);
     Graph graph;
     graph.parseinput();
     graph.build_Graph_based_on_Connectivity();
@@ -205,5 +261,5 @@ int main(){
 
 
 
-    return 0;
+    return 0; 
 }
