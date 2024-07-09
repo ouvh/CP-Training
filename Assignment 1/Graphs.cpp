@@ -6,18 +6,10 @@
 #include <map>
 #include <cmath>
 #include <queue>
+#include <limits>
 
 
 using namespace std;
-
-
-struct TreeNode {
-    unsigned int val;
-    vector<TreeNode> children;
-
-    // Constructor
-    TreeNode(int x) : val(x) {}
-};
 
 
 
@@ -31,7 +23,7 @@ class Graph{
     private:
 
         struct CompareEdge {
-            bool operator()(pair<unsigned int,double> const& e1, pair<unsigned int,double> const& e2) {
+            bool operator()(const pair<unsigned int,double>& e1, const pair<unsigned int,double>& e2) {
                 return e1.second > e2.second; 
             }
         };
@@ -39,7 +31,7 @@ class Graph{
         static vector<pair<float,float>> coordinates_map;
 
         struct PairComparator {
-            bool operator()(const std::pair<unsigned int, unsigned int>& a, const std::pair<unsigned int, unsigned int>& b) const {
+            bool operator()(const pair<unsigned int, unsigned int>& a, const pair<unsigned int, unsigned int>& b) const {
                 
                     return distance(Graph::coordinates_map[a.first],Graph::coordinates_map[a.second]) < distance(Graph::coordinates_map[b.first],Graph::coordinates_map[b.second]);
                 
@@ -208,39 +200,238 @@ class Graph{
 
             priority_queue<pair<unsigned int,double>, vector<pair<unsigned int,double>>, CompareEdge> pq;
 
-            vector<int> min_to_vertex(capacity, INT_MAX);
+            vector<double> min_to_vertex(capacity, INT_MAX);
 
-            vector<int> parent(capacity, -1);
+            vector<unsigned int> parent(capacity, -1);
+
 
             vector<bool> inserted(capacity, false);
 
-            unsigned int root = 0; // i choosed 0 as the root of the MST
-            min_to_vertex[root] = 0;
-            pq.push({root, 0});
+            for(size_t i=0;i<capacity;i++){
 
-            while (!pq.empty()) {
+                if(!inserted[i]){
 
-                int front = pq.top().first;
+                    unsigned int root = i; 
+                    parent[root] = root;
+                    min_to_vertex[root] = 0;
+                    pq.push({root, 0});
+
+                    while (!pq.empty()) {
+
+                        unsigned int front = pq.top().first;
+                        pq.pop();
+
+                        inserted[front] = true;
+
+                        for (auto& pair : Adjlist[front]) {
+
+                            unsigned int v = pair.first.second;
+                            double weight = pair.second;
+
+                            if (!inserted[v] && weight < min_to_vertex[v]) {
+
+                                min_to_vertex[v] = weight;
+                                parent[v] = front;
+                                pq.push({v, weight});
+                            }
+                        }
+                    }
+
+
+                }
+
+            }
+
+            
+
+
+            vector<pair<unsigned int,unsigned int>> edges(capacity);
+
+
+            for(size_t i=0;i<capacity;i++){
+                edges[i] = {parent[i],i};
+            }
+            
+
+            sort(edges.begin(),edges.end(),[this](const pair<unsigned int, unsigned int>& a,const pair<unsigned int, unsigned int>& b)->bool{
+                double weight1;
+                double weight2;
+
+                if(a.first == a.second)weight1=0;
+                else weight1= Adjlist[a.first][a];
+
+                if(b.first == b.second)weight2=0;
+                else  weight2= Adjlist[b.first][b];
+
+
+
+                return weight1 < weight2;
+            });
+
+
+            for(size_t i=0;i<capacity;i++){
+                cout << edges[i].first << " " << edges[i].second << "\n";
+            }
+
+
+            
+        }
+
+        void Dijkistra(unsigned int start, unsigned int finish){
+
+            size_t capacity = coordinates_map.size();
+            if(start >= capacity || finish >= capacity)return;
+            if(capacity == 0)return;
+            if(start == finish){
+                cout << "path : " << start << " \n";
+                cout << "distance :" << 0;
+            }
+
+            priority_queue<pair<unsigned int,double>, vector<pair<unsigned int,double>>, CompareEdge> pq;
+            vector<double> distances(capacity, INT_MAX);
+            vector<int> predecors(capacity,-1);
+            vector<bool> visited(capacity,false);
+            bool arrived = false;
+
+            distances[start] = 0;
+            visited[start] = 0;
+            pq.push({start, 0});
+
+
+
+            while(!pq.empty() && !arrived){
+                unsigned int front = pq.top().first;
                 pq.pop();
-
-                inserted[front] = true;
 
                 for (auto& pair : Adjlist[front]) {
 
                     unsigned int v = pair.first.second;
-                    int weight = pair.second;
+                    double new_distance = distances[front] +  pair.second ;
+    
+                    if (!visited[v] && (new_distance < distances[v])) {
 
-                    if (!inserted[v] && weight < min_to_vertex[v]) {
+                        distances[v] = new_distance;
+                        predecors[v] = front;
 
-                        min_to_vertex[v] = weight;
-                        parent[v] = front;
-                        pq.push({v, min_to_vertex[v]});
+                        if(v == finish){
+                            arrived = true;
+                            break;
+                        }
+                        else{
+                            pq.push({v, new_distance});
+                        }
+
                     }
                 }
+
+                
+
+
+            };
+
+
+            if(!arrived){
+                cout << "Cars are disconnected , No Path\n";
+                return;
             }
-        
+
+            vector<unsigned int> path;
+            unsigned int traverse = finish;
+
+            while(traverse != start){
+                path.push_back(traverse);
+                traverse = predecors[traverse];
+            }
+            path.push_back(start);
+
+            for(int i=path.size()-1;i>0;i--){
+                cout << path[i] << " -> " ;
+            }
+            cout << path[0];
+
+            cout << "\ndistance: " << distances[finish];
+            
+
         }
 
+        void interface(){
+            cout << "       Welcome (Thanks for providing Cars data)\n";
+            int response;
+            unsigned int carid;
+            unsigned int carid1;
+            unsigned int carid2;
+
+            do{
+                cout << "\n Choose from the menu the operation by typing the corresponding number and enter:\n";
+                cout << "1) Display all edges\n2) Display Adjacent Vehicles\n3) Move a vehicule\n4) DFS\n5) BFS\n6) MST\n 7) Shortest Path\n8) Quit\n";
+                cout << "you :";
+                cin >> response;
+
+
+                switch (response)
+                {
+                case 1:
+                    diplay_edges();
+                    break;
+                case 2:
+                    cout << "Car id :";
+                    cin >> carid;
+                    diplay_Adj_vehicules(carid);
+                    break;
+                case 3:
+                    float x,y;
+
+                    cout << "Car id :";
+                    cin >> carid;
+
+                    cout << "X coordinate :";
+                    cin >> x;
+
+                    cout << "Y coordinate :";
+                    cin >> y;
+
+
+                    move_vehicule(carid,x,y);
+                    cout << "Car coordinate Updated Successfully\n";
+                    break;
+                case 4:
+
+                    cout << "Car id :";
+                    cin >> carid;
+                    DFS(carid);
+                    break;
+                case 5:
+
+                    cout << "Car id :";
+                    cin >> carid;
+                    BFS(carid);
+                    break;
+
+                case 6:
+                    prim_MST();
+                    break;
+                case 7:
+                 
+
+
+                    cout << "Car id of the start point:";
+                    cin >> carid1;
+
+                    cout << "Car id of the finish point:";
+                    cin >> carid2;
+
+                    Dijkistra(carid1,carid2);
+                    break;
+                case 8:
+                    cout << "Quitting";
+                    break;
+                
+                default:
+                    break;
+                }
+
+            }while(response != 8);
+        }
 };
 
 vector<pair<float,float>> Graph::coordinates_map;
@@ -249,14 +440,12 @@ vector<pair<float,float>> Graph::coordinates_map;
 int main(){
 
 
-    TreeNode d(5);
     Graph graph;
     graph.parseinput();
     graph.build_Graph_based_on_Connectivity();
+    graph.interface();
     
-    graph.DFS(0);
-    cout << "Hello\n";
-    graph.BFS(0);
+ 
 
 
 
